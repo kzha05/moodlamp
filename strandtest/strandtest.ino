@@ -8,6 +8,9 @@
 
 // SETUP: Define the main pin you use from the arduino to the LED strip
 #define LED_PIN 6
+int touch = 9;  // pin for touch sensor
+int touch1 = 10;
+int ledPin = 6; // pin for the LED
 
 // SETUP: How many pixels does the LED strip have? (the full one was 120, the halves are 60 each)
 #define LED_COUNT 120
@@ -18,9 +21,14 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 // SETUP: Define the list array as a global variable & define lastColor as global variable
 uint32_t list[7];
 int lastColorIndex = -1;
+long firstPixelHue = 0;
 
 // FUNC + SETUP: LED strip, void setup() runs once at the start of the program.
 void setup() {
+  Serial.begin(9600);
+  pinMode(ledPin, OUTPUT);
+  pinMode(touch, INPUT);
+  pinMode(touch1, INPUT);
 #if defined(__AVR_ATtiny85__) && (F_CPU == 16000000)
   clock_prescale_set(clock_div_1);
 #endif
@@ -45,15 +53,21 @@ void setup() {
 // EXPL: loop() function -- runs repeatedly as long as board is on
 
 void loop() {
-//  rainbow(20, 100000);
-  rainbow(0.1,3000); // 0.2 seconds
-  theaterChaseRainbow(50, 10); // delay 50ms, repeat 30 times
-  colorWipe(randomColorFromList(list, 7), 50);
-  delay(5000);
-  rainbow(10,10000); // 10 seconds
-  
-  //  rainbow(10);             // ARGUMENT: The higher the number, the slower the speed
-  //  theaterChaseRainbow(50, 30); // FUNC: Rainbow-enhanced theaterChase variant
+  int touchValue = digitalRead(touch);
+  int touchValue1 = digitalRead(touch1);
+  if (touchValue == HIGH || touchValue1 == HIGH){
+    digitalWrite(ledPin, HIGH);
+    Serial.println("touched");
+    rainbow(0.1,3000);
+    theaterChaseRainbow(50, 10); // delay 50ms, repeat 30 times
+    colorWipe(randomColorFromList(list, 7), 50);
+    delay(5000);
+  }
+  else{
+    digitalWrite(ledPin,LOW);
+    rainbow(20, 100);
+    Serial.println("not touched");
+  }
 }
 
 // DEVEX: Helper functions
@@ -111,12 +125,16 @@ void theaterChase(uint32_t color, int wait, int repeat) {
 void rainbow(int wait, int duration) {
   unsigned long startTime = millis(); 
 
-    for (long firstPixelHue = 0; firstPixelHue < 5 * 65536; firstPixelHue += 256) {
+    if (firstPixelHue >= 327424){
+      firstPixelHue = 0;
+    }
+    for (long tempFirstPixelHue = firstPixelHue; tempFirstPixelHue < 5 * 65536; tempFirstPixelHue += 256) {
+      Serial.println(tempFirstPixelHue);
+      firstPixelHue = tempFirstPixelHue;
       if (millis() - startTime >= duration) {
-        Serial.println("broken");
         break;
       }
-      strip.rainbow(firstPixelHue);
+      strip.rainbow(tempFirstPixelHue);
       strip.show(); // Update strip
       delay(wait);
     }
@@ -125,21 +143,21 @@ void rainbow(int wait, int duration) {
 // URTURN: Document what this function does
 // ARGS: color in strip.Color(r,g,b), wait in ms, repeat in amount of times it repeats
 void theaterChaseRainbow(int wait, int repeat) {
-  int firstPixelHue = 0;     // EXPL: First pixel starts at red (hue 0)
+  int tempFirstPixelHue = 0;     // EXPL: First pixel starts at red (hue 0)
   for(int a=0; a<repeat; a++) {
     for(int b=0; b<3; b++) {
       strip.clear(); // EXPL: Turn all pixels off
 
       // EXPL: function to do rainbow voodoo
       for(int c=b; c<strip.numPixels(); c += 3) {
-        int      hue   = firstPixelHue + c * 65536L / strip.numPixels();
+        int      hue   = tempFirstPixelHue + c * 65536L / strip.numPixels();
         uint32_t color = strip.gamma32(strip.ColorHSV(hue)); // DEVEX: hue -> RGB
         strip.setPixelColor(c, color); // EXPL: Set pixel 'c' to value 'color'
       }
       
       strip.show(); // EXPL: Update strip
       delay(wait);
-      firstPixelHue += 65536 / 90; // EXPL: One cycle of color wheel over 90 frames
+      tempFirstPixelHue += 65536 / 90; // EXPL: One cycle of color wheel over 90 frames
     }
   }
 }
