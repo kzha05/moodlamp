@@ -10,6 +10,9 @@
 #define LED_PIN 6
 int touch = 9;  // pin for touch sensor
 int touch1 = 10;
+int touch2 = 11;
+int touch3 = 12;
+int touch4 = 13;
 int ledPin = 6; // pin for the LED
 
 // SETUP: How many pixels does the LED strip have? (the full one was 120, the halves are 60 each)
@@ -29,6 +32,9 @@ void setup() {
   pinMode(ledPin, OUTPUT);
   pinMode(touch, INPUT);
   pinMode(touch1, INPUT);
+  pinMode(touch2, INPUT);
+  pinMode(touch3, INPUT);
+  pinMode(touch4, INPUT);
 #if defined(__AVR_ATtiny85__) && (F_CPU == 16000000)
   clock_prescale_set(clock_div_1);
 #endif
@@ -55,7 +61,10 @@ void setup() {
 void loop() {
   int touchValue = digitalRead(touch);
   int touchValue1 = digitalRead(touch1);
-  if (touchValue == HIGH || touchValue1 == HIGH){
+  int touchValue2 = digitalRead(touch2);
+  int touchValue3 = digitalRead(touch3);
+  int touchValue4 = digitalRead(touch4);
+  if (touchValue == HIGH || touchValue1 == HIGH || touchValue2 == HIGH || touchValue3 == HIGH || touchValue4 == HIGH){
     digitalWrite(ledPin, HIGH);
     Serial.println("touched");
     rainbow(0.1,3000);
@@ -129,7 +138,6 @@ void rainbow(int wait, int duration) {
       firstPixelHue = 0;
     }
     for (long tempFirstPixelHue = firstPixelHue; tempFirstPixelHue < 5 * 65536; tempFirstPixelHue += 256) {
-      Serial.println(tempFirstPixelHue);
       firstPixelHue = tempFirstPixelHue;
       if (millis() - startTime >= duration) {
         break;
